@@ -24,6 +24,10 @@
   - Train the model from Task 1 on the compressed data using both compression methods. 
   - Evaluate baseline model and proposed tokenization + lightweight entropy model framework based on rate-utility and computational efficiency.
     - => Define metrics in more detail.
+    - Reconstruction error ???
+    - Compression rate ???
+    - Metrcs for "rate-utility":
+      - ???
     - Metrics for "model weight":
       -	Parameter count: total number of trainable parameters
       -	Computational cost: FLOPs per fixed-length input window
