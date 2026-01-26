@@ -13,11 +13,9 @@
 - Stage 2, Development: (Week 6-10, Deadline: 27.03.)
   - Develop a learnable tokenization module that discretizes data into semantically meaningful
   units optimized for downstream tasks.
-    - => Create a more detailed plan for this. 
   - Develop lightweight entropy modeling and coding schemes tailored to the tokenized representations.
-    - => Create a more detailed plan for this.
   - Develop a decoder.
-    - => Create a more detailed plan for this. 
+    - => Create a more detailed plan for the implementation ??? 
   - Write the halftime report. 
   - Write the theory part of the final report.
 - Stage 3, Experiments: (Week 11-13, Deadline: 17.04.)
