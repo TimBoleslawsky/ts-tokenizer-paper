@@ -25,28 +25,115 @@ x
 | Compression metric | Proxy (latent size) | True bits per sample |
 | Pipeline completeness | Partial (transform only) | Full neural codec |
 
-### Detailed Implementation TCRAE
-1. Input Handling
+### Detailed Implementation: TCRAE (TCN–RNN Autoencoder)
 
-3. TCN Encoder
-```
-class TCNBlock:
-    Conv1D(in_channels, out_channels, kernel_size, dilation)
-    Normalization (BatchNorm or LayerNorm)
-    Activation (ReLU / LeakyReLU)
-    Dropout (optional)
-    Residual connection
-```
+1. Input handling and preprocessing
+	•	Multivariate time-series data are segmented into fixed-length windows.
+	•	Each channel is normalized independently using statistics computed on the training set.
+	•	Windows are treated as independent samples during training and evaluation.
 
-3. RNN Bottleneck
-```
-class BottleneckRNN:
-    RNN(type=LSTM or GRU,
-        input_size=D,
-        hidden_size=H,
-        num_layers=L,
-        bidirectional=optional)
-```
+⸻
+
+2. TCN encoder (transform coding stage)
+	•	The encoder consists of a stack of Temporal Convolutional Network (TCN) blocks with increasing dilation factors.
+	•	Each TCN block contains:
+	•	A 1D convolution operating along the temporal dimension
+	•	Normalization (BatchNorm or LayerNorm)
+	•	A nonlinear activation function (ReLU or LeakyReLU)
+	•	Optional dropout for regularization
+	•	A residual connection to stabilize training
+	•	Temporal downsampling is introduced via strided convolutions or pooling layers to reduce sequence length.
+	•	The encoder maps the input signal to a lower-resolution, higher-dimensional latent sequence, forming the continuous bottleneck.
+
+Outcome:
+A compressed continuous latent representation whose size is controlled by the downsampling factor and channel width.
+
+⸻
+
+3. RNN bottleneck (sequence compression)
+	•	The encoder output is processed by a recurrent neural network (LSTM or GRU).
+	•	The RNN captures longer-range temporal dependencies that are not easily modeled by convolutions alone.
+	•	The hidden state dimensionality and number of layers define the strength of the bottleneck.
+	•	The RNN produces a sequence of hidden states (or a reduced representation) that serves as the core compressed signal.
+
+Interpretation:
+Compression is achieved implicitly by restricting temporal resolution and latent dimensionality rather than by discretization.
+
+⸻
+
+4. RNN decoder
+	•	A symmetric RNN decoder reconstructs a latent sequence from the bottleneck representation.
+	•	The decoder mirrors the bottleneck RNN in depth and hidden size.
+	•	No probabilistic modeling or entropy estimation is performed at this stage.
+
+⸻
+
+5. TCN decoder (signal reconstruction)
+	•	A mirrored TCN stack upsamples the latent sequence back to the original temporal resolution.
+	•	Transposed convolutions or interpolation-based upsampling are used.
+	•	A final linear projection maps features back to the original channel dimension.
+
+Training objective:
+	•	Reconstruction loss (e.g., MSE or MAE) between input and reconstructed signal.
+
+⸻
+
+6. Compression characteristics (TCRAE)
+	•	Compression rate is defined structurally via:
+	•	Temporal downsampling factor
+	•	Latent dimensionality
+	•	No explicit quantization, entropy modeling, or bitstream generation is performed.
+	•	Reported compression rates are proxy metrics derived from latent size.
+
+⸻
+
+### Detailed Implementation: Tokenization-Based Compression
+
+1. Input handling and preprocessing
+	•	Identical preprocessing and windowing as used for TCRAE to ensure comparability.
+	•	Normalization statistics are shared across methods.
+
+⸻
+
+2. Lightweight encoder (feature extraction)
+	•	A shallow neural encoder (e.g., small CNN or MLP applied per timestep) maps the input signal to intermediate embeddings.
+	•	The encoder is intentionally kept lightweight to avoid introducing heavy representational power before tokenization.
+	•	Temporal resolution is preserved or mildly reduced, depending on the tokenizer design.
+
+⸻
+
+3. Vector quantization / tokenization
+	•	Intermediate embeddings are discretized using a learned codebook.
+	•	Each embedding vector is replaced by the index of its nearest codebook entry.
+	•	This step introduces the only explicit source of information loss.
+	•	The output is a sequence of discrete token IDs drawn from a finite vocabulary.
+
+Outcome:
+A symbolic representation of the time series suitable for storage, transmission, or direct consumption by downstream models.
+
+⸻
+
+4. Entropy modeling
+	•	A learned probabilistic model estimates the distribution of token sequences.
+	•	Contextual dependencies between tokens may be modeled autoregressively or using lightweight temporal context.
+	•	The entropy model defines the expected bitrate of the representation.
+
+⸻
+
+5. Entropy coding
+	•	Tokens are compressed into a bitstream using a standard entropy coder (e.g., arithmetic coding or ANS).
+	•	Frequently occurring tokens receive shorter codes, resulting in efficient compression.
+	•	The resulting bitstream represents the final compressed output.
+
+⸻
+
+6. Compression characteristics (tokenization)
+	•	Compression rate is measured in true bits per sample or bits per second.
+	•	Rate is controlled via:
+	•	Codebook size
+	•	Token sequence length
+	•	Entropy model capacity
+	•	The method implements a complete neural compression pipeline.
 
 
 ## Comparison of Implementations
@@ -73,7 +160,7 @@ This enables a fair, controlled comparison while remaining faithful to the assum
 - In the representation-based setting, minimal and symmetric adapter layers are employed to map different representation types into a common input space, while keeping the core downstream architecture identical.
 - This dual evaluation strategy balances experimental control with practical relevance, enabling fair comparison while reflecting realistic deployment scenarios for compressed time-series representations.
 
-### Lightweight adapter design (intuition-focused summary)
+### Lightweight Adapter Design 
 
 To compare compressed representations fairly, we use minimal adapters whose sole purpose is to align input formats, not to learn new features.
 
