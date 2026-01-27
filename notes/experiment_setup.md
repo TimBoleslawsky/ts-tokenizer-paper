@@ -71,4 +71,15 @@ A single linear layer predicting one value.
 	•	Classification (anomaly detection):
 A single linear layer predicting normal vs. anomalous.
 
+### Metrics
+    - Reconstruction error ???
+    - Compression rate ???
+    - Metrcs for "rate-utility":
+      - ???
+    - Metrics for "model weight":
+      -	Parameter count: total number of trainable parameters
+      -	Computational cost: FLOPs per fixed-length input window
+      -	Inference latency: wall-clock encoding and decoding time
+      -	Memory footprint: peak memory usage during inference
+
 This ensures that any performance difference comes from the compressed representation, not from downstream model capacity.
