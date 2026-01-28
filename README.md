@@ -31,7 +31,7 @@
       - Outline of the experiment setup. 
   - Add Limitations, Risk analyis, and time plan.
   - Define the downstream task: Find and define an anomaly task and/or regression (which data/ columns/ ... to use) and build a small RNN model as baseline (Tim).
-  - Figure out how much of Volvos data can we show (Tim).
+  - Figure out how much of Volvos data can we show (Tim). => We can plot some data as examples, but we cannot release a dataset!
   - Look for an open-source dataset that can serve the same purpose (Emrik).
 - Stage 2:
   - ...
