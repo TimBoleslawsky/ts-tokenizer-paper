@@ -61,7 +61,7 @@ To add task-awareness to the EdgeCodec architecture, an end-to-end approach is i
 L(x, \hat{x}, z, \tilde{z}, y, \hat{y}) = \alpha \cdot L_\mathrm{MSE}(x, \hat{x}) + (1 - \alpha) \cdot L_{l1\mathrm{-smooth}}(x, \hat{x}) + \eta \cdot L_\mathrm{RVQ}(z, \tilde{z}) + \gamma \cdot L_\mathrm{task}(y, \hat{y})
 \end{equation}
 
-The task loss $L_\mathrm{task}$ is defined as a smooth l1 Huber loss for the regression task and a cross entropy loss for the classification task. Huber loss was chosen because of its stability introduced by the balance of MSE and mean absolute error~\ref{Huber1964}. The targets are directly loaded from the datasets, so that the reconstructed time series can be fed directly to the task head together with targets to produce task predictions and calculate the specific loss. For the regression task, the complete sequence for each window is constructed so that each timestep values is predicted by the task. The classification task tries to predict anomalies on a window-level. The task head for both tasks is identical and purposefully kept simple to isolate the compression method effect. The complete task head architecture is presented in Figure~\ref{fig:task-head}.
+The task loss $L_\mathrm{task}$ is defined as a smooth l1 Huber loss for the regression task and a cross entropy loss for the classification task. Huber loss was chosen because of its stability introduced by the balance of MSE and mean absolute error~\cite{Huber1964}. The targets are directly loaded from the datasets, so that the reconstructed time series can be fed directly to the task head together with targets to produce task predictions and calculate the specific loss. For the regression task, the complete sequence for each window is constructed so that each timestep values is predicted by the task. The classification task tries to predict anomalies on a window-level. The task head for both tasks is identical and purposefully kept simple to isolate the compression method effect. The complete task head architecture is presented in Figure~\ref{fig:task-head}.
 
 \begin{figure}[h]
 \centering
@@ -144,7 +144,7 @@ Besides reconstruction error, CR is the other important metric to evaluate compr
 \#\text{bits} = \lceil \log_2(k) \rceil, \quad \text{CR} = \frac{A \cdot B}{\#\text{bits} \cdot N}
 \end{equation}
 
-Because this equation is not immediately intuitive, a numerical example is provided. The architecture presented by Hodo et al.~\cite{Hodo2025} compresses the input using both the encoder and the quantization module. In the EdgeCodec paper, the input has 36 channels and a window size of 800 time steps. The output of the encoder is a downsampled version of this input with dimensions 9 channels $\times$ 100 time steps. This means that the encoder alone compresses with a CR of $(800/100) \cdot (36/9) = 32\times$. In the quantization setup, the authors compress with precision $A$, which corresponds to 32-bit precision of the input signals. The number of bits per code depends on the codebook size $k$. For a codebook of size 768, the bits per code are roughly 10. The total number of transmitted codes, $N$, is calculated by multiplying the number of quantizers by the number of input channels to the quantizers. Because the encoder outputs 9 channels and the architecture presented by Hodo et al.~\cite{Hodo2025} uses four quantizers, $N$ is equal to 36. Applying the CR equation gives $\frac{9 \cdot 100 \cdot 32}{36 \cdot 10} = 80\times$. The total CR is then obtained by multiplying the encoder CR by the quantizer CR, resulting in a total CR of $32 \cdot 80 = 2560\times$, as presented in the paper.
+Because this equation is not immediately intuitive, a numerical example is provided. The architecture presented by Hodo et al.~\cite{Hodo2025} compresses the input using both the encoder and the quantization module. In the EdgeCodec paper, the input has 36 channels and a window size of 800 time steps. The output of the encoder is a downsampled version of this input with dimensions 9 channels $\times$ 100 time steps. This means that the encoder alone compresses with a CR of $(800/100) \cdot (36/9) = 32$. In the quantization setup, the authors compress with precision $A$, which corresponds to 32-bit precision of the input signals. The number of bits per code depends on the codebook size $k$. For a codebook of size 768, the bits per code are roughly 10. The total number of transmitted codes, $N$, is calculated by multiplying the number of quantizers by the number of input channels to the quantizers. Because the encoder outputs 9 channels and the architecture presented by Hodo et al.~\cite{Hodo2025} uses four quantizers, $N$ is equal to 36. Applying the CR equation gives $\frac{9 \cdot 100 \cdot 32}{36 \cdot 10} = 80$. The total CR is then obtained by multiplying the encoder CR by the quantizer CR, resulting in a total CR of $32 \cdot 80 = 2560$, as presented in the paper. This number can be interpreted as the compressed data being 2560 times smaller than the uncompressed data. 
 
 Second, the \textit{downstream task performance} when using compressed representations of the training data for selected downstream models from both methods is evaluated. This includes metrics such as accuracy for classification tasks or MSE for regression tasks. To measure this, the downstream models are trained on uncompressed data and compressed data using different neural compression methods. By comparing the utility loss across these approaches, the utility retention of the various neural compression methods can be measured.
 
@@ -169,21 +169,9 @@ The channel progression in the encoder is [7, 7, 7, 7] for the smart home datase
 
 \subsection{Compression Ratio}
 
-Certain parameters have been set with the intent of roughly alligning the CR of each codec so that their results will be comparable. For this reason, the codebook size and the number of quantizers have been modified. The CR can be computed as follows:
+Certain parameters have been set with the intent of roughly alligning the CR of each codec at a reasonable rate so that their results will be comparable and meaningful. For this reason, the codebook size and the number of quantizers have been modified. Because of architectural limitations, which will be further discussed in Chapter~\ref{chap:results}, the continuious latent TCN RNN baseline cannot compete with the discrete latent methods in terms of CR. For this reason the TCN RNN baseline is omitted here.
 
-\begin{equation}
-\text{original\_size} = \text{channels} \times \text{timesteps} \times 32
-\end{equation}
-
-\begin{equation}
-\text{compressed\_size} = \lceil \log_2(\text{codebook\_size}) \rceil \times \text{channels} \times \text{num\_quantizers}
-\end{equation}
-
-\begin{equation}
-\text{CR} = \frac{\text{original\_size}}{\text{compressed\_size}}
-\end{equation}
-
-Table~\ref{tab:compression-ratios-emob} presents the computed CR for the three architectures evaluated on the Volvo EMOB dataset, demonstrating that the architectures achieve comparable compression performance despite their different internal configurations.
+Table~\ref{tab:compression-ratios-emob} presents the computed CR for the three discrete latent architectures evaluated on the Volvo EMOB dataset, demonstrating that the architectures achieve comparable compression performance despite their different internal configurations.
 
 \begin{table}[h]
 \small
@@ -196,15 +184,15 @@ Table~\ref{tab:compression-ratios-emob} presents the computed CR for the three a
     \textbf{Model} & \textbf{Codebook} & \textbf{Emb.} & \textbf{Num} & \textbf{CR} \\
     & \textbf{Size} & \textbf{Dim.} & \textbf{Quant.} & \\
     \hline
-    EdgeCodec & 768 & 32 & 2 & 213.7$\times$ \\
-    UniEdgeCodec & 1000 & 64 & 2 & 204.8$\times$ \\
-    TAEdgeCodec & 768 & 64 & 2 & 213.7$\times$ \\
+    EdgeCodec & 768 & 32 & 2 & 213.7 \\
+    UniEdgeCodec & 1000 & 64 & 2 & 204.8 \\
+    TAEdgeCodec & 768 & 64 & 2 & 213.7 \\
     \hline
     \end{tabular}
 }
 \end{table}
 
-Similarly, Table~\ref{tab:compression-ratios-appliances} shows the computed CR for the appliances energy dataset. Despite the larger number of channels and longer window size compared to the EMOB dataset, all three architectures maintain comparable compression performance, achieving between 240$\times$ and 230$\times$ compression.
+Similarly, Table~\ref{tab:compression-ratios-appliances} shows the computed CR for the appliances energy dataset. Despite the larger number of channels and longer window size compared to the EMOB dataset, all three architectures maintain comparable compression performance, achieving a CR of between 230 and 240.
 
 \begin{table}[h]
 \centering
@@ -216,9 +204,9 @@ Similarly, Table~\ref{tab:compression-ratios-appliances} shows the computed CR f
   \textbf{Model} & \textbf{Codebook} & \textbf{Emb.} & \textbf{Num} & \textbf{CR} \\
   & \textbf{Size} & \textbf{Dim.} & \textbf{Quant.} & \\
   \hline
-  EdgeCodec & 768 & 72 & 2 & 240.4$\times$ \\
-  UniEdgeCodec & 1000 & 72 & 2 & 230.4$\times$ \\
-  TAEdgeCodec & 768 & 64 & 2 & 240.4$\times$ \\
+  EdgeCodec & 768 & 72 & 2 & 240.4 \\
+  UniEdgeCodec & 1000 & 72 & 2 & 230.4 \\
+  TAEdgeCodec & 768 & 64 & 2 & 240.4 \\
   \hline
   \end{tabular}%
 }
